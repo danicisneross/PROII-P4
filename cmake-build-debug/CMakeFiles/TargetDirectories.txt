@@ -1,0 +1,5 @@
+/home/dani/Escritorio/PROII/PROII-P4/cmake-build-debug/CMakeFiles/test_bid_stack.dir
+/home/dani/Escritorio/PROII/PROII-P4/cmake-build-debug/CMakeFiles/test_product_list.dir
+/home/dani/Escritorio/PROII/PROII-P4/cmake-build-debug/CMakeFiles/main.dir
+/home/dani/Escritorio/PROII/PROII-P4/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/dani/Escritorio/PROII/PROII-P4/cmake-build-debug/CMakeFiles/rebuild_cache.dir
