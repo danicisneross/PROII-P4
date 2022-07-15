@@ -1,10 +1,9 @@
 /*
  * TITLE: PROGRAMMING II LABS
  * SUBTITLE: Practical 4
-  * AUTHOR 1: Daniela A Cisneros Sande LOGIN 1: d.cisneross
- * AUTHOR 2: Candela Iglesias Lorenzo LOGIN 2: candela.iglesias
+ * AUTHOR 1: Daniela A Cisneros Sande LOGIN 1: d.cisneross
  * GROUP: 4.1
- * DATE: 31 / 03 / 22
+ * DATE: 01 / 07 / 22
  */
 
 #include <stdio.h>
@@ -58,10 +57,10 @@ void new(tProductId pd, tUserId userId, tProductCategory prodCategory, tProductP
  *          -tUserId: Identificador del usuario.
  *          -tProductCategory: Categoria del producto (book, painting).
  *          -tProductPrice: Precio del producto.
- *          -tProductList: lista ordenada de productos.
+ *          -tList: lista ordenada de productos.
  * SALIDA: La lista pasada por referencia con el nuevo producto introducido.
  * PRECD: La lista debe estar creada.
- * POSC:
+ * POSC: El producto estara agregado y ademas de esto, si ya existian productos, pueden haber variado de posicion.
 */
 
 void delete(tProductId prodId, tList *L) {
@@ -98,43 +97,44 @@ void delete(tProductId prodId, tList *L) {
 
  * OBJETIVO: Baja un producto de la lista (todas sus caracteristicas se eliminaran).
  * ENTRADA: -tProductId: Identificador del producto.
- *          -tProductList: Lista de productos.
+ *          -tList: Lista de productos.
  * SALIDA: La lista pasada por referencia, sin el producto.
  * PRECD: La lista y la pila deben estar creadas.
- * POSC:
+ * POSC: Los productos posteriores pueden haber variado de posicion.
 */
 
 void bid(tProductId prodId, tUserId userId, tProductPrice price, tList *L) {
     tItemL producto;
     tItemS puja;
     tStack *pujasP;
-    pujasP = &producto.bidStack;
     char category[N];
-    bool pila_llena = false;
     tPosL p;
     p = findItem(prodId, *L);
 
-    //no se comprueba que el precio de la nueva puja debe superar al de la cima de la pila
-
     if (p != LNULL) {
         producto = getItem(p, *L);
-        if ((price > puja.productPrice) && (price > producto.productPrice) &&
-            (strcmp(producto.seller, userId) != 0)) {
-            if (producto.productCategory == book) {
-                producto.productCategory = book;
-                strcpy(category, "book");
-            } else {
-                producto.productCategory = painting;
-                strcpy(category, "painting");
-            }
-            puja.productPrice = price;
-            strcpy(puja.bidder, userId);
-            pila_llena = push(puja, pujasP);
-            producto.bidCounter++;
-            updateItem(producto, p, L);
-            if (pila_llena) { //no se deberia actualizar la lista
-                printf("* Bid: product %s bidder %s category %s price %.2f bids %d\n", prodId, puja.bidder, category,
-                       puja.productPrice, producto.bidCounter);
+        pujasP = &producto.bidStack;
+        if (!isEmptyStack(pujasP)){
+            puja = peek(*pujasP);
+            if ((price > puja.productPrice) && (price > producto.productPrice) &&
+                (strcmp(producto.seller, userId) != 0)) {
+                if (producto.productCategory == book) {
+                    producto.productCategory = book;
+                    strcpy(category, "book");
+                } else {
+                    producto.productCategory = painting;
+                    strcpy(category, "painting");
+                }
+                puja.productPrice = price;
+                strcpy(puja.bidder, userId);
+                if (push(puja, pujasP)) {
+                    producto.bidCounter++;
+                    updateItem(producto, p, L);
+                    printf("* Bid: product %s bidder %s category %s price %.2f bids %d\n", prodId, puja.bidder, category,
+                           puja.productPrice, producto.bidCounter);
+                } else {
+                    printf("+ Error: Bid not possible\n");
+                }
             } else {
                 printf("+ Error: Bid not possible\n");
             }
@@ -153,22 +153,22 @@ void bid(tProductId prodId, tUserId userId, tProductPrice price, tList *L) {
  * ENTRADA: -tProductId: Identificador del producto.
  *          -tUserId: Identificador del usuario.
  *          -tProductPrice: Precio del producto.
- *          -tProductList: Lista de productos.
+ *          -tList: Lista de productos.
  * SALIDA: La lista pasada por referencia con el precio de la puja actualizado.
  * PRECD: La lista y el stack deben existir.
 */
 
 void award(tProductId prodId, tList *L) {
     tItemL producto;
+    tItemS puja;
+    tStack *pujasP;
     tPosL p;
     char category[N];
     p = findItem(prodId, *L);
 
     if (p != LNULL) {
         producto = getItem(p, *L);
-        tStack *pujasP;
         pujasP = &producto.bidStack;
-        tItemS puja;
         if (!isEmptyStack(*pujasP)) {
             puja = peek(*pujasP);
             while (!isEmptyStack(*pujasP)) { //Vaciamos el stack
@@ -196,7 +196,7 @@ void award(tProductId prodId, tList *L) {
   *************************************** FUNCION AWARD *********************************************
  * OBJETIVO: Asignar el ganador de una puja.
  * ENTRADA: -tProductId: Identificador del producto.
- *          -tProductList: Lista de productos.
+ *          -tList: Lista de productos.
  * SALIDA: La lista pasada por referencia actualizada (sin el producto que se ha vendido).
  * PRECD: La lista y la pila deben existir.
 */
@@ -206,17 +206,14 @@ void withdraw(tProductId prodId, tUserId userId, tList *L) {
     tPosL p;
     char category[N];
     tStack *pujasP;
-    pujasP = &producto.bidStack;
     tItemS puja;
     p = findItem(prodId, *L);
-   // producto = getItem(p, *L); // Violación de la precondición de getItem en Withdraw.
 
-    // Lista vacia
-    // El producto indicado no existe en la lista
-
-    if (p != LNULL && (!isEmptyStack(*pujasP))) {
-       // puja = peek(*pujasP); // Acceso a la pila antes de hacer un getItem en Withdraw.
-        if (strcmp(puja.bidder, userId) == 0) {
+    if (p != LNULL) {
+        producto = getItem(p, *L);
+        pujasP = &producto.bidStack;
+        puja = peek(*pujasP);
+        if (!isEmptyStack(*pujasP) && (strcmp(puja.bidder, userId) == 0)) {
             if (producto.productCategory == book) {
                 producto.productCategory = book;
                 strcpy(category, "book");
@@ -242,24 +239,22 @@ void withdraw(tProductId prodId, tUserId userId, tList *L) {
  * OBJETIVO: Retirada de la máxima puja actual del producto.
  * ENTRADA: -tProductId: Identificador del producto.
  *          -tUserId: Identificador del usuario.
- *          -tProductList: Lista de productos.
+ *          -tList: Lista de productos.
  * SALIDA: La lista pasada por referencia con el contador de pujas del producto actualizado.
  * PRECD: La lista y la pila deben existir.
 */
 
-void removee(tList *L) {
+void Remove(tList *L) {
     char category[N];
     tItemL producto;
-    tPosL p;
-
-    //La operación Remove no funciona correctamente cuando se intentan eliminar varios
-    //elementos consecutivos que se sitúan en posiciones intermedias de la lista de productos.
+    tPosL p, nextp;
+    int contBorrados = 0;  //Contador para saber si borramos o no algo de la lista
 
     if (!isEmptyList(*L)) {
         p = first(*L);
-        int contadorBorrados = 0; //Contador para saber si borramos o no algo de la lista
         while (p != LNULL) {
             producto = getItem(p, *L);
+            nextp = next(p, *L);
             if (producto.bidCounter == 0) {
                 if (producto.productCategory == book) {
                     producto.productCategory = book;
@@ -268,25 +263,25 @@ void removee(tList *L) {
                     producto.productCategory = painting;
                     strcpy(category, "painting");
                 }
-                printf("Removing product %s seller %s category %s price %.2f bids %i\n", producto.productId,
+                printf("Removing product %s seller %s category %s price %.2f bids %d\n", producto.productId,
                        producto.seller, category, producto.productPrice, producto.bidCounter);
                 deleteAtPosition(p, L);
-                contadorBorrados++;
+                contBorrados++;
             }
-            p = next(p, *L);
+            p = nextp;
         }
-        if (contadorBorrados == 0) {
-            printf("+ Error: remove not possible");
+        if (contBorrados == 0) {
+            printf("+ Error: Remove not possible\n");
         }
     } else {
-        printf("+ Error: remove not possible"); //supuestamente si esta vacia no se impreme este mensaje
+        printf("+ Error: Remove not possible\n");
     }
 }
 
 /*
   *************************************** FUNCION REMOVE *********************************************
  * OBJETIVO: Elimina los productos sin pujas.
- * ENTRADA: -tProductList: Lista de productos.
+ * ENTRADA: -tList: Lista de productos.
  * SALIDA: La lista sin los productos indicados.
  * PRECD: La lista y la pila deben existir.
 */
@@ -298,7 +293,6 @@ void stats(tList L) {
     tPosL p;
     tItemS puja;
     tStack *pujasP;
-    pujasP = &producto.bidStack;
     float increase = 0, d_precio, price = 0, top_price = 0, increaseActual;
     bool hay_bids = false;
     char category[N], product[N], seller[N], categoryB[N], bidder[N];
@@ -307,7 +301,7 @@ void stats(tList L) {
         p = first(L);
         while (p != LNULL) {
             producto = getItem(p, L);
-            puja = peek(*pujasP);
+            pujasP = &producto.bidStack;
 
             if (producto.productCategory == book) {
                 strcpy(category, "book");
@@ -319,6 +313,7 @@ void stats(tList L) {
                 pricePaintings += producto.productPrice;
             }
             if (!isEmptyStack(*pujasP)) {
+                puja = peek(*pujasP);
                 hay_bids = true;
                 d_precio = puja.productPrice - producto.productPrice;
                 increaseActual = (d_precio / producto.productPrice) * 100;
@@ -358,11 +353,71 @@ void stats(tList L) {
   *************************************** FUNCION STATS *******************************************
 
  * OBJETIVO: Mostrar el listado de productos actuales y sus datos.
- * ENTRADA: -tProductList: Lista de productos.
+ * ENTRADA: -tList: Lista de productos.
  * SALIDA: No hay parametros de salida (ni por referencia) ya que la lista no se modifica y solo se muestran sus datos.
- * PRECD: La lista no este vacia, de lo contrario los datos a mostrar estaran a cero.
 */
 
+void invalidateBids(tList *L) {
+    char category[N];
+    tItemL producto;
+    tStack *pujasP;
+    tPosL p, nextp;
+    int contBorrados = 0;
+    float avgBids = 0, contProductos = 0;
+
+    if (!isEmptyList(*L)) {
+        p = first(*L);
+        while (p != LNULL) {
+            producto = getItem(p, *L);
+            contProductos++;
+            avgBids += producto.bidCounter;
+            p = next(p, *L);
+        }
+        avgBids = (avgBids / contProductos);
+    }
+
+    if (!isEmptyList(*L)) {
+        p = first(*L);
+        while (p != LNULL) {
+            producto = getItem(p, *L);
+            pujasP = &producto.bidStack;
+            nextp = next(p, *L);
+            if (producto.bidCounter > (avgBids * 2)) {
+                if (producto.productCategory == book) {
+                    producto.productCategory = book;
+                    strcpy(category, "book");
+                } else {
+                    producto.productCategory = painting;
+                    strcpy(category, "painting");
+                }
+                printf("* InvalidateBids: product %s seller %s category %s price %.2f bids %d average bids %.2f\n",
+                       producto.productId, producto.seller, category, producto.productPrice, producto.bidCounter,
+                       avgBids);
+                while(!isEmptyStack(*pujasP)){
+                    pop(pujasP);
+                    producto.bidCounter--;
+                }
+                updateItem(producto, p, L);
+                contBorrados++;
+            }
+            p = nextp;
+        }
+        if (contBorrados == 0) {
+            printf("+ Error: InvalidateBids not possible\n");
+        }
+    } else {
+        printf("+ Error: InvalidateBids not possible\n");
+    }
+}
+
+/*
+  *************************************** FUNCION INVALIDATEBIDS *******************************************
+
+ * OBJETIVO: Elimina las pujas fraudulentas.
+ * ENTRADA: -tList: Lista de productos.
+ * SALIDA: La lista sin pujas fraudulentas.
+ * PRECD: Lista creada.
+*/
 
 void processCommand(char *commandNumber, char command, char *param1, char *param2, char *param3, char *param4,
                     tList *L) {
@@ -380,7 +435,7 @@ void processCommand(char *commandNumber, char command, char *param1, char *param
             break;
         case 'S':
             printf("%s %c\n", commandNumber, command);
-            stats(L);
+            stats(*L);
             break;
         case 'B':
             printf("%s %c: product %s bidder %s price %s\n", commandNumber, command, param1, param2, param3);
@@ -400,7 +455,11 @@ void processCommand(char *commandNumber, char command, char *param1, char *param
             break;
         case 'R':
             printf("%s %c\n", commandNumber, command);
-            removee(L);
+            Remove(L);
+            break;
+        case 'I':
+            printf("%s %c\n", commandNumber, command);
+            invalidateBids(L);
             break;
         default:
             break;
